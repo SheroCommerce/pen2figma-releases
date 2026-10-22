@@ -1,0 +1,194 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+  body{font:12px/1.4 Inter,system-ui,sans-serif;margin:0;padding:14px;color:#222}
+  h1{font-size:13px;margin:0 0 10px}
+  .doc{color:#666;margin-bottom:8px;word-break:break-all}
+  #frames{max-height:170px;overflow:auto;border:1px solid #e5e5e5;border-radius:6px;padding:6px}
+  #frames label{display:flex;gap:6px;align-items:center;padding:3px 2px;font-weight:400;margin:0}
+  .row{display:flex;gap:8px;margin-top:6px}
+  .row button{flex:1}
+  button{margin-top:10px;width:100%;padding:8px;border:0;border-radius:6px;background:#0d99ff;color:#fff;font-weight:600;cursor:pointer}
+  button.secondary{background:#eee;color:#222;font-weight:500}
+  button:disabled{background:#bbb;cursor:default}
+  pre:empty{display:none}
+  pre{margin-top:12px;padding:8px;background:#f4f4f4;border-radius:6px;max-height:150px;overflow:auto;white-space:pre-wrap;font-size:11px}
+  details{margin-top:12px}
+  details label{display:block;margin:8px 0 4px;font-weight:600}
+  input[type=file]{width:100%}
+  .hint{color:#666}
+  #offline{display:none}
+  #footer{margin-top:12px;font-size:11px}
+  button.link{display:inline;width:auto;margin:0 0 0 6px;padding:0;background:none;color:#0d99ff;font-weight:500;font-size:11px}
+  button.link:disabled{background:none;color:#999}
+</style></head>
+<body>
+<h1>pen2figma</h1>
+<div id="online">
+  <div class="doc" id="doc">Connecting to Pen…</div>
+  <div id="frames"></div>
+  <div class="row">
+    <button class="secondary" id="all">All</button>
+    <button class="secondary" id="none">None</button>
+    <button class="secondary" id="refresh">Refresh</button>
+  </div>
+  <button id="go" disabled>Import selected</button>
+</div>
+<div id="offline">
+  <p>Can't reach the pen2figma helper on this Mac.<br>
+  Double-click <b>Install.command</b> from the pen2figma download, then click Retry.</p>
+  <button id="retry">Retry</button>
+</div>
+<details>
+  <summary class="hint">Import from files instead</summary>
+  <label>design.json</label>
+  <input id="design" type="file" accept=".json,application/json">
+  <label>assets folder</label>
+  <input id="assets" type="file" webkitdirectory multiple>
+  <button class="secondary" id="gofiles" disabled>Import files</button>
+</details>
+<pre id="log"></pre>
+<div class="hint" id="footer"><span id="version"></span><button class="link" id="update">Check for updates</button></div>
+<script>
+  const HELPER = "http://localhost:4141";
+  const VERSION = "0.2.2"; // keep in step with package.json; npm run check enforces it
+  const $ = (id) => document.getElementById(id);
+  const log = (s) => { $("log").textContent += ($("log").textContent ? "\n" : "") + s; $("log").scrollTop = 1e9; };
+  const checked = () => [...$("frames").querySelectorAll("input:checked")].map((c) => c.value);
+  const sync = () => { $("go").disabled = !checked().length; $("gofiles").disabled = !fileDesign; };
+  const busy = (b) => { $("refresh").disabled = b; if (b) $("go").disabled = $("gofiles").disabled = true; else sync(); };
+  const b64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+
+  let loadSeq = 0;
+  async function loadState() {
+    const seq = ++loadSeq;
+    $("doc").textContent = "Connecting to Pen…";
+    try {
+      const r = await fetch(`${HELPER}/state`);
+      const st = await r.json();
+      if (seq !== loadSeq) return; // a newer load (Refresh) superseded this one
+      $("frames").innerHTML = "";
+      if (!r.ok) throw new Error(st.error);
+      $("version").textContent = st.version === VERSION ? `plugin v${VERSION} · helper v${st.version}`
+        : st.version ? `plugin v${VERSION} · helper v${st.version} - close and reopen the plugin`
+        : `plugin v${VERSION} · helper older - double-click Install.command again`;
+      $("online").style.display = ""; $("offline").style.display = "none";
+      if (!st.doc) { $("doc").textContent = "No document open in Pen."; $("go").disabled = true; return; }
+      $("doc").textContent = st.doc.split("/").pop();
+      const sel = new Set(st.selected.map((n) => n.id));
+      const byName = (a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+      // nested selections aren't in top; list them too, like the CLI exports them
+      const topIds = new Set(st.top.map((n) => n.id));
+      const rows = [...st.selected.filter((n) => !topIds.has(n.id)), ...st.top].sort((a, b) => sel.has(b.id) - sel.has(a.id) || byName(a, b));
+      for (const n of rows) {
+        const l = document.createElement("label");
+        const c = Object.assign(document.createElement("input"), { type: "checkbox", value: n.id, checked: sel.size ? sel.has(n.id) : true });
+        l.append(c, document.createTextNode(n.name));
+        $("frames").append(l);
+      }
+      sync();
+    } catch (e) {
+      if (seq !== loadSeq) return;
+      if (e instanceof TypeError) { $("online").style.display = "none"; $("offline").style.display = "block"; }
+      else $("doc").textContent = `Pen error: ${e.message}`;
+    }
+  }
+
+  function run(design, assets) {
+    log(`importing ${design.name}: ${design.nodes.length} root node(s), ${design.assets.length} image(s), ${Object.keys(design.icons).length} icon(s)…`);
+    busy(true);
+    parent.postMessage({ pluginMessage: { type: "import", design, assets } }, "*");
+  }
+
+  $("go").onclick = async () => {
+    const ids = checked();
+    busy(true);
+    $("log").textContent = "reading from Pen…";
+    try {
+      const r = await fetch(`${HELPER}/export?ids=${ids.join(",")}`);
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error);
+      const assets = {};
+      for (const [k, v] of Object.entries(d.assetData)) assets[k] = b64(v);
+      if (d.missingAssets.length) log(`missing image files, will import as grey: ${d.missingAssets.join(", ")}`);
+      if (d.missingIcons.length) log(`missing icons, will import as empty frames: ${d.missingIcons.join(", ")}`);
+      if (d.missingRasters.length) log(`could not export from Pen as image, will import as empty frames: ${d.missingRasters.join(", ")}`);
+      run(d, assets);
+    } catch (e) { log(`failed: ${e.message}`); busy(false); }
+  };
+  const setAll = (v) => { $("frames").querySelectorAll("input").forEach((c) => (c.checked = v)); sync(); };
+  $("all").onclick = () => setAll(true);
+  $("none").onclick = () => setAll(false);
+  $("frames").onchange = sync;
+  $("refresh").onclick = $("retry").onclick = loadState;
+
+  // First click asks the helper whether main on GitHub is newer; the second installs it.
+  let latest = null;
+  $("update").onclick = async () => {
+    const b = $("update");
+    b.disabled = true;
+    try {
+      if (!latest) {
+        b.textContent = "Checking…";
+        const r = await fetch(`${HELPER}/update`);
+        const u = await r.json();
+        if (r.status === 404) throw new Error("this helper is too old to update itself: double-click Install.command from the newest download");
+        if (!r.ok) throw new Error(u.error);
+        if (!u.available) { b.textContent = "Up to date"; b.disabled = false; return; }
+        latest = u.latest;
+        b.textContent = `Update to v${latest}`;
+        b.disabled = false;
+        return;
+      }
+      b.textContent = "Updating…";
+      const r = await fetch(`${HELPER}/update`, { method: "POST" });
+      const u = await r.json();
+      if (!r.ok) throw new Error(u.error);
+      b.textContent = `Updated to v${u.version}`;
+      log(`updated to v${u.version}. Close and reopen the plugin to use it.`);
+    } catch (e) {
+      latest = null;
+      b.textContent = "Check for updates";
+      b.disabled = false;
+      log(`update failed: ${e instanceof TypeError ? "can't reach the pen2figma helper" : e.message}`);
+    }
+  };
+
+  let fileDesign = null;
+  $("design").onchange = async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    fileDesign = JSON.parse(await f.text());
+    sync();
+  };
+  $("gofiles").onclick = async () => {
+    if (!fileDesign) return;
+    const assets = {};
+    const files = [...$("assets").files];
+    for (const url of fileDesign.assets) {
+      const f = files.find((x) => (x.webkitRelativePath || x.name).endsWith("/" + url) || x.name === url);
+      if (f) assets[url] = new Uint8Array(await f.arrayBuffer());
+    }
+    const missing = fileDesign.assets.filter((a) => !assets[a]);
+    if (missing.length) log(`no bytes for ${missing.length} image(s), they will import as grey: ${missing.join(", ")}`);
+    run(fileDesign, assets);
+  };
+
+  onmessage = (e) => {
+    const m = e.data.pluginMessage; if (!m) return;
+    if (m.type === "log") log(m.text);
+    if (m.type === "done") {
+      log(m.text);
+      if (m.ok) {
+        // reset so the same frames can't be imported twice by accident
+        $("frames").querySelectorAll("input").forEach((c) => (c.checked = false));
+        $("design").value = $("assets").value = "";
+        fileDesign = null;
+        log("check frames again to import more.");
+      }
+      busy(false);
+    }
+  };
+  $("version").textContent = `plugin v${VERSION}`;
+  loadState();
+</script>
+</body></html>

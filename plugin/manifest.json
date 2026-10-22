@@ -1,0 +1,13 @@
+{
+  "name": "pen2figma",
+  "id": "pen2figma-local-dev",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": ["http://localhost:4141"],
+    "reasoning": "Reads the design from the pen2figma helper running on this machine."
+  }
+}

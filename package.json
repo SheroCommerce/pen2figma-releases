@@ -1,0 +1,17 @@
+{
+  "name": "pen2figma",
+  "version": "0.2.2",
+  "description": "Move pen.dev designs into Figma with real auto-layout, variables, fonts and images. No LLM in the loop.",
+  "type": "module",
+  "bin": { "pen2figma": "bin/pen2figma.mjs" },
+  "scripts": {
+    "export": "node bin/pen2figma.mjs export",
+    "serve": "node bin/pen2figma.mjs serve",
+    "check": "node --check bin/pen2figma.mjs && node --check lib/pen.mjs && node --check plugin/code.js && node scripts/check-version.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1"
+  },
+  "license": "UNLICENSED",
+  "private": true
+}
