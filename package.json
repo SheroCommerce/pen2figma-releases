@@ -1,6 +1,6 @@
 {
   "name": "pen2figma",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Move pen.dev designs into Figma with real auto-layout, variables, fonts and images. No LLM in the loop.",
   "type": "module",
   "bin": { "pen2figma": "bin/pen2figma.mjs" },

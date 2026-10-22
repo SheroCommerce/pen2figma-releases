@@ -1,128 +1,477 @@
 <!doctype html>
 <html><head><meta charset="utf-8">
 <style>
-  body{font:12px/1.4 Inter,system-ui,sans-serif;margin:0;padding:14px;color:#222}
-  h1{font-size:13px;margin:0 0 10px}
-  .doc{color:#666;margin-bottom:8px;word-break:break-all}
-  #frames{max-height:170px;overflow:auto;border:1px solid #e5e5e5;border-radius:6px;padding:6px}
-  #frames label{display:flex;gap:6px;align-items:center;padding:3px 2px;font-weight:400;margin:0}
-  .row{display:flex;gap:8px;margin-top:6px}
-  .row button{flex:1}
-  button{margin-top:10px;width:100%;padding:8px;border:0;border-radius:6px;background:#0d99ff;color:#fff;font-weight:600;cursor:pointer}
-  button.secondary{background:#eee;color:#222;font-weight:500}
-  button:disabled{background:#bbb;cursor:default}
-  pre:empty{display:none}
-  pre{margin-top:12px;padding:8px;background:#f4f4f4;border-radius:6px;max-height:150px;overflow:auto;white-space:pre-wrap;font-size:11px}
-  details{margin-top:12px}
-  details label{display:block;margin:8px 0 4px;font-weight:600}
-  input[type=file]{width:100%}
-  .hint{color:#666}
-  #offline{display:none}
-  #footer{margin-top:12px;font-size:11px}
-  button.link{display:inline;width:auto;margin:0 0 0 6px;padding:0;background:none;color:#0d99ff;font-weight:500;font-size:11px}
-  button.link:disabled{background:none;color:#999}
+  /* Figma injects --figma-color-* (showUI themeColors) and follows the user's light/dark theme;
+     the fallbacks are Figma's light values so the file also previews in a plain browser tab. */
+  :root{
+    --bg:var(--figma-color-bg,#fff);
+    --bg2:var(--figma-color-bg-secondary,#f5f5f5);
+    --hover:var(--figma-color-bg-hover,#f5f5f5);
+    --selected:var(--figma-color-bg-selected,#e5f4ff);
+    --text:var(--figma-color-text,#000000e5);
+    --text2:var(--figma-color-text-secondary,#00000094);
+    --text3:var(--figma-color-text-tertiary,#0000004d);
+    --border:var(--figma-color-border,#e6e6e6);
+    --border-strong:var(--figma-color-border-strong,#2c2c2c);
+    --focus:var(--figma-color-border-selected,#0d99ff);
+    --brand:var(--figma-color-bg-brand,#0d99ff);
+    --brand-hover:var(--figma-color-bg-brand-hover,#007be5);
+    --on-brand:var(--figma-color-text-onbrand,#fff);
+    --brand-text:var(--figma-color-text-brand,#007be5);
+    --disabled:var(--figma-color-bg-disabled,#d9d9d9);
+    --on-disabled:var(--figma-color-text-ondisabled,#ffffffe5);
+    --icon:var(--figma-color-icon,#000000e5);
+    --icon2:var(--figma-color-icon-secondary,#00000080);
+    --success:var(--figma-color-icon-success,#14ae5c);
+    --warning:var(--figma-color-icon-warning,#f7a600);
+    --danger:var(--figma-color-icon-danger,#f24822);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;display:flex;flex-direction:column;background:var(--bg);color:var(--text);font:400 11px/16px Inter,system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+  button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+  button:disabled{cursor:default}
+  :focus-visible{outline:1px solid var(--focus);outline-offset:-1px;border-radius:5px}
+  svg{flex:none;display:block}
+  code{font:inherit;font-weight:550}
+  [hidden]{display:none!important}
+
+  .bar{display:flex;align-items:center;gap:8px;height:40px;padding:0 8px 0 16px;border-bottom:1px solid var(--border)}
+  .doc{flex:1;min-width:0;display:flex;align-items:center;gap:6px;font-weight:550;color:var(--icon)}
+  .doc span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--text)}
+  .doc span.dim{color:var(--text2);font-weight:400}
+  .icon-btn{width:24px;height:24px;border-radius:5px;display:grid;place-items:center;color:var(--icon)}
+  .icon-btn:hover:not(:disabled){background:var(--hover)}
+  .icon-btn:disabled{color:var(--text3)}
+  .icon-btn.spin svg{animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .filter{margin:8px 8px 0;display:flex;align-items:center;gap:4px;height:28px;padding:0 8px 0 6px;border-radius:5px;background:var(--bg2);border:1px solid transparent;color:var(--icon2)}
+  .filter:focus-within{border-color:var(--focus);background:var(--bg)}
+  .filter input{flex:1;min-width:0;border:0;outline:0;background:none;font:inherit;color:var(--text)}
+  .filter input::placeholder{color:var(--text2)}
+  .filter input::-webkit-search-cancel-button{display:none}
+
+  .listhead{display:flex;align-items:center;gap:6px;height:32px;padding:0 8px 0 16px}
+  .listhead b{font-weight:550}
+  .listhead .dim{color:var(--text2);flex:1}
+  .text-btn{height:24px;padding:0 8px;border-radius:5px;color:var(--text)}
+  .text-btn:hover:not(:disabled){background:var(--hover)}
+  .text-btn:disabled{color:var(--text3)}
+
+  .list{flex:1;min-height:0;overflow:auto;padding:0 8px 8px}
+  .group{height:28px;display:flex;align-items:flex-end;padding:0 8px 6px;color:var(--text2)}
+  .group:first-child{height:20px}
+  .row{display:flex;align-items:center;gap:8px;height:28px;padding:0 8px;border-radius:5px;cursor:default;user-select:none}
+  .row:hover{background:var(--hover)}
+  .row.on{background:var(--selected)}
+  .row .name{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .row svg{color:var(--icon2)}
+  .row.on svg{color:var(--icon)}
+  .check{appearance:none;margin:0;width:12px;height:12px;border-radius:2px;border:1px solid var(--border-strong);flex:none;cursor:default}
+  .check:checked{background:var(--brand) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cpath d='M1 4.2 3 6.2 7 1.8' fill='none' stroke='white' stroke-width='1.4'/%3E%3C/svg%3E") center no-repeat;border-color:var(--brand)}
+  .check:focus-visible{outline-offset:1px;border-radius:2px}
+  .nomatch{padding:24px 8px;text-align:center;color:var(--text2)}
+
+  .empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:24px 40px 48px;text-align:center}
+  .empty svg{color:var(--icon2);margin-bottom:4px}
+  .empty h2{margin:0;font-size:13px;line-height:20px;font-weight:550}
+  .empty p{margin:0;color:var(--text2);max-width:260px}
+  .empty .secondary{margin-top:8px}
+
+  .files{flex:1;display:flex;flex-direction:column;gap:16px;padding:8px 16px 16px}
+  .files p{margin:0;color:var(--text2)}
+  .back{align-self:flex-start;display:flex;align-items:center;gap:2px;margin-left:-8px;padding:0 8px 0 4px}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field b{font-weight:550}
+  .pick{position:relative;display:flex;align-items:center;gap:8px;height:32px;padding:0 8px;border-radius:5px;border:1px solid var(--border);cursor:pointer;color:var(--icon2)}
+  .pick:hover{background:var(--hover)}
+  .pick:focus-within{border-color:var(--focus)}
+  .pick span{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--text2)}
+  .pick.set span{color:var(--text)}
+  .pick input{position:absolute;inset:0;opacity:0;width:100%;cursor:pointer}
+
+  .foot{border-top:1px solid var(--border);padding:12px 16px 0}
+  .status{margin-bottom:12px}
+  .progress-label{display:flex;gap:6px;min-width:0}
+  .progress-label span:last-child{color:var(--text2);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .track{height:2px;margin-top:8px;border-radius:1px;background:var(--bg2);overflow:hidden}
+  .track i{display:block;height:100%;width:0;background:var(--brand);transition:width .2s cubic-bezier(.16,1,.3,1)}
+  .headline{display:flex;align-items:flex-start;gap:8px}
+  .headline > div{flex:1;min-width:0}
+  .headline b{display:block;font-weight:550}
+  .headline .dim{color:var(--text2);overflow-wrap:anywhere}
+  .notes{margin:6px 0 0 16px;display:flex;flex-direction:column;max-height:120px;overflow:auto}
+  .notes summary{list-style:none;display:flex;align-items:center;gap:4px;min-height:24px;cursor:pointer}
+  .notes summary::-webkit-details-marker{display:none}
+  .notes summary .count{color:var(--text2)}
+  .notes summary svg{color:var(--icon2);transition:transform .15s}
+  .notes details[open] summary svg{transform:rotate(90deg)}
+  .notes ul{margin:0 0 4px;padding:0 0 0 36px;color:var(--text2)}
+  .notes li{overflow-wrap:anywhere}
+  .links{margin:4px 0 0 16px}
+  .links .text-btn{color:var(--brand-text)}
+
+  .primary{width:100%;height:32px;border-radius:5px;background:var(--brand);color:var(--on-brand);font-weight:550}
+  .primary:hover:not(:disabled){background:var(--brand-hover)}
+  .primary:disabled{background:var(--disabled);color:var(--on-disabled)}
+  .primary:focus-visible{outline-offset:1px}
+  .secondary{height:24px;padding:0 8px;border-radius:5px;border:1px solid var(--border);font-weight:500}
+  .secondary:hover{background:var(--hover)}
+
+  .notice{display:flex;align-items:flex-start;gap:6px;margin-top:10px;color:var(--text2)}
+  .notice svg{color:var(--warning)}
+  .meta{display:flex;align-items:center;height:36px;margin:0 -8px;color:var(--text2)}
+  .meta #version{padding:0 8px}
+  .meta .text-btn{color:var(--text2)}
+  .meta .text-btn.go{color:var(--brand-text);font-weight:550}
+  .meta .spacer{flex:1}
+
+  @media (prefers-reduced-motion:reduce){.icon-btn.spin svg{animation:none}.track i,.notes summary svg{transition:none}}
 </style></head>
 <body>
-<h1>pen2figma</h1>
-<div id="online">
-  <div class="doc" id="doc">Connecting to Pen…</div>
-  <div id="frames"></div>
-  <div class="row">
-    <button class="secondary" id="all">All</button>
-    <button class="secondary" id="none">None</button>
-    <button class="secondary" id="refresh">Refresh</button>
+<!-- pen2figma plugin window. Figma UI3 grammar: Figma's theme tokens, 11px Inter, 28px rows, one blue primary action.
+     The task leads (pick frames, import); status and notes sit with the button, versions and the file fallback stay quiet in the footer. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-frame" viewBox="0 0 16 16"><path fill="currentColor" d="M5.5 2v2.5H3v1h2.5v5H3v1h2.5V14h1v-2.5h3V14h1v-2.5H13v-1h-2.5v-5H13v-1h-2.5V2h-1v2.5h-3V2h-1Zm1 3.5h3v5h-3v-5Z"/></symbol>
+  <symbol id="i-layer" viewBox="0 0 16 16"><rect x="3.5" y="3.5" width="9" height="9" rx="1" fill="none" stroke="currentColor"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 16 16"><path fill="none" stroke="currentColor" d="M2.5 4.5a1 1 0 0 1 1-1h3l1.5 1.5h4.5a1 1 0 0 1 1 1v5.5a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-file" viewBox="0 0 16 16"><path fill="none" stroke="currentColor" d="M4 2.5h5L12 5.5v8H4z"/><path fill="none" stroke="currentColor" d="M8.5 2.5v3.5H12"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 16 16"><path fill="none" stroke="currentColor" stroke-linecap="round" d="M12.5 8a4.5 4.5 0 1 1-1.4-3.26M11.5 2.5v2.5H9"/></symbol>
+  <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="3.5" fill="none" stroke="currentColor"/><path stroke="currentColor" stroke-linecap="round" d="m9.6 9.6 3 3"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 16 16"><path fill="none" stroke="currentColor" d="M10.6 2.9a1.4 1.4 0 0 1 2 2L6 11.5l-2.8.8.8-2.8z"/><path stroke="currentColor" d="M9.4 4.1l2 2"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="currentColor"/><path fill="none" stroke="#fff" stroke-width="1.3" d="m5.3 8.1 1.8 1.8 3.6-3.8"/></symbol>
+  <symbol id="i-fail" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="currentColor"/><path stroke="#fff" stroke-width="1.3" d="m5.9 5.9 4.2 4.2m0-4.2-4.2 4.2"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 16 16"><path fill="currentColor" d="M7.13 2.5a1 1 0 0 1 1.74 0l5.2 9a1 1 0 0 1-.87 1.5H2.8a1 1 0 0 1-.87-1.5z"/><path stroke="#fff" stroke-width="1.2" d="M8 6v3.2"/><circle cx="8" cy="11" r=".7" fill="#fff"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 16 16"><path fill="none" stroke="currentColor" d="m6.5 5 3 3-3 3"/></symbol>
+  <symbol id="i-back" viewBox="0 0 16 16"><path fill="none" stroke="currentColor" d="M9.5 4.5 6 8l3.5 3.5"/></symbol>
+  <symbol id="i-plug" viewBox="0 0 32 32"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M12 4v6m8-6v6M9 10h14v4a7 7 0 0 1-14 0zm7 11v7"/><path stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M5 5l22 22"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 32 32"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M8 4.75h11l5.25 5.25v17.25H8z"/><path fill="none" stroke="currentColor" stroke-width="1.5" d="M18.75 4.75V10.25h5.5M12 16h8m-8 4h6"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 32 32"><circle cx="16" cy="16" r="11.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M16 10v7.5"/><circle cx="16" cy="21.5" r="1.1" fill="currentColor"/></symbol>
+</svg>
+
+<header class="bar">
+  <div class="doc"><svg width="16" height="16"><use href="#i-pen"/></svg><span id="doc" class="dim">Connecting to Pen…</span></div>
+  <button class="icon-btn" id="refresh" title="Refresh from Pen" aria-label="Refresh from Pen"><svg width="16" height="16"><use href="#i-refresh"/></svg></button>
+</header>
+
+<section id="pick" hidden>
+  <label class="filter" id="filterBox" hidden><svg width="16" height="16"><use href="#i-search"/></svg><input id="filter" type="search" placeholder="Filter frames" aria-label="Filter frames"></label>
+  <div class="listhead"><b>Frames</b><span class="dim" id="count"></span><button class="text-btn" id="toggleAll"></button></div>
+</section>
+<div class="list" id="frames" role="group" aria-label="Frames in Pen" hidden></div>
+
+<div class="empty" id="empty">
+  <svg width="32" height="32" id="emptyIcon"><use href="#i-doc"/></svg>
+  <h2 id="emptyTitle">Connecting to Pen…</h2>
+  <p id="emptyText"></p>
+  <button class="secondary" id="emptyAction" hidden></button>
+</div>
+
+<div class="files" id="files" hidden>
+  <button class="text-btn back" id="filesBack"><svg width="16" height="16"><use href="#i-back"/></svg>Frames from Pen</button>
+  <p>Import the <b>design.json</b> and <b>assets</b> folder written by <code>pen2figma export</code>, for when the helper can't run.</p>
+  <div class="field"><b>design.json</b><label class="pick" id="designPick"><svg width="16" height="16"><use href="#i-file"/></svg><span>Choose file…</span><input id="design" type="file" accept=".json,application/json"></label></div>
+  <div class="field"><b>Assets folder</b><label class="pick" id="assetsPick"><svg width="16" height="16"><use href="#i-folder"/></svg><span>Choose folder…</span><input id="assets" type="file" webkitdirectory multiple></label></div>
+</div>
+
+<footer class="foot">
+  <div class="status" id="status" aria-live="polite" hidden></div>
+  <button class="primary" id="go" disabled>Select frames to import</button>
+  <div class="notice" id="notice" hidden><svg width="16" height="16"><use href="#i-warn"/></svg><span id="noticeText"></span></div>
+  <div class="meta">
+    <span id="version"></span>
+    <button class="text-btn" id="update">Check for updates</button>
+    <span class="spacer"></span>
+    <button class="text-btn" id="filesLink">Import from files</button>
   </div>
-  <button id="go" disabled>Import selected</button>
-</div>
-<div id="offline">
-  <p>Can't reach the pen2figma helper on this Mac.<br>
-  Double-click <b>Install.command</b> from the pen2figma download, then click Retry.</p>
-  <button id="retry">Retry</button>
-</div>
-<details>
-  <summary class="hint">Import from files instead</summary>
-  <label>design.json</label>
-  <input id="design" type="file" accept=".json,application/json">
-  <label>assets folder</label>
-  <input id="assets" type="file" webkitdirectory multiple>
-  <button class="secondary" id="gofiles" disabled>Import files</button>
-</details>
-<pre id="log"></pre>
-<div class="hint" id="footer"><span id="version"></span><button class="link" id="update">Check for updates</button></div>
+</footer>
+
 <script>
   const HELPER = "http://localhost:4141";
-  const VERSION = "0.2.2"; // keep in step with package.json; npm run check enforces it
+  const VERSION = "0.2.3"; // keep in step with package.json; npm run check enforces it
   const $ = (id) => document.getElementById(id);
-  const log = (s) => { $("log").textContent += ($("log").textContent ? "\n" : "") + s; $("log").scrollTop = 1e9; };
-  const checked = () => [...$("frames").querySelectorAll("input:checked")].map((c) => c.value);
-  const sync = () => { $("go").disabled = !checked().length; $("gofiles").disabled = !fileDesign; };
-  const busy = (b) => { $("refresh").disabled = b; if (b) $("go").disabled = $("gofiles").disabled = true; else sync(); };
+  const icon = (id) => `<svg width="16" height="16"><use href="#i-${id}"/></svg>`;
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const plural = (n, one) => `${n} ${n === 1 ? one : one + "s"}`;
   const b64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+  // "0.10.0" is newer than "0.9.1"
+  const isNewer = (a, b) => { const x = a.split("."), y = b.split("."); for (let i = 0; i < 3; i++) if (+x[i] !== +y[i]) return +x[i] > +y[i]; return false; };
+
+  // full transcript behind "Copy details", so a failed import can be sent to whoever maintains pen2figma
+  let transcript = [];
+  const log = (s) => transcript.push(s);
+
+  let frames = [];          // [{id, name, type, inPen}]
+  let picked = new Set();
+  let lastClicked = null;
+  let busy = false;
+  let view = "empty";       // empty | pick | files
+  let loaded = false;       // first successful frame list picks Pen's selection
+
+  function show(v) {
+    view = v;
+    $("pick").hidden = $("frames").hidden = v !== "pick";
+    $("empty").hidden = v !== "empty";
+    $("files").hidden = v !== "files";
+    $("filesLink").hidden = v === "files";
+    sync();
+  }
+
+  function empty(iconId, title, text, action) {
+    $("emptyIcon").innerHTML = `<use href="#i-${iconId}"/>`;
+    $("emptyTitle").textContent = title;
+    $("emptyText").textContent = text || "";
+    $("emptyAction").hidden = !action;
+    if (action) { $("emptyAction").textContent = action.label; $("emptyAction").onclick = action.run; }
+    if (view !== "files") show("empty");
+  }
+
+  function docName(text, connected) {
+    $("doc").textContent = text;
+    $("doc").classList.toggle("dim", !connected);
+  }
+
+  // ---------- frames from Pen ----------
 
   let loadSeq = 0;
   async function loadState() {
     const seq = ++loadSeq;
-    $("doc").textContent = "Connecting to Pen…";
+    $("refresh").classList.add("spin");
     try {
       const r = await fetch(`${HELPER}/state`);
       const st = await r.json();
       if (seq !== loadSeq) return; // a newer load (Refresh) superseded this one
-      $("frames").innerHTML = "";
-      if (!r.ok) throw new Error(st.error);
-      $("version").textContent = st.version === VERSION ? `plugin v${VERSION} · helper v${st.version}`
-        : st.version ? `plugin v${VERSION} · helper v${st.version} - close and reopen the plugin`
-        : `plugin v${VERSION} · helper older - double-click Install.command again`;
-      $("online").style.display = ""; $("offline").style.display = "none";
-      if (!st.doc) { $("doc").textContent = "No document open in Pen."; $("go").disabled = true; return; }
-      $("doc").textContent = st.doc.split("/").pop();
-      const sel = new Set(st.selected.map((n) => n.id));
-      const byName = (a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+      versions(st.version);
+      if (!r.ok) {
+        docName("Pen", false);
+        return empty("alert", "Can't read from Pen", "Make sure the Pen app is open with a document, then try again.", { label: "Try again", run: loadState });
+      }
+      if (!st.doc) {
+        docName("No document open", false);
+        return empty("doc", "Open a design in Pen", "pen2figma imports from the document that's open in the Pen app.", { label: "Refresh", run: loadState });
+      }
+      docName(st.doc.split("/").pop(), true);
+      const inPen = new Set(st.selected.map((n) => n.id));
       // nested selections aren't in top; list them too, like the CLI exports them
       const topIds = new Set(st.top.map((n) => n.id));
-      const rows = [...st.selected.filter((n) => !topIds.has(n.id)), ...st.top].sort((a, b) => sel.has(b.id) - sel.has(a.id) || byName(a, b));
-      for (const n of rows) {
-        const l = document.createElement("label");
-        const c = Object.assign(document.createElement("input"), { type: "checkbox", value: n.id, checked: sel.size ? sel.has(n.id) : true });
-        l.append(c, document.createTextNode(n.name));
-        $("frames").append(l);
-      }
-      sync();
+      const byName = (a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+      frames = [...st.selected.filter((n) => !topIds.has(n.id)), ...st.top].map((n) => ({ ...n, inPen: inPen.has(n.id) }))
+        .sort((a, b) => b.inPen - a.inPen || byName(a, b));
+      const known = new Set(frames.map((f) => f.id));
+      // the first list picks Pen's selection (everything when nothing is selected); Refresh keeps the designer's own picks
+      picked = loaded ? new Set([...picked].filter((id) => known.has(id))) : new Set(inPen.size ? inPen : known);
+      loaded = true;
+      $("filterBox").hidden = frames.length <= 8;
+      if (!frames.length) return empty("doc", "Nothing to import yet", "This Pen document has no frames.", { label: "Refresh", run: loadState });
+      renderFrames();
+      if (view !== "files") show("pick");
     } catch (e) {
       if (seq !== loadSeq) return;
-      if (e instanceof TypeError) { $("online").style.display = "none"; $("offline").style.display = "block"; }
-      else $("doc").textContent = `Pen error: ${e.message}`;
+      docName("Not connected", false);
+      if (e instanceof TypeError) empty("plug", "pen2figma isn't running", "Double-click Install.command from the pen2figma download, then try again.", { label: "Try again", run: loadState });
+      else empty("alert", "Something went wrong", e.message, { label: "Try again", run: loadState });
+    } finally {
+      if (seq === loadSeq) $("refresh").classList.remove("spin");
     }
   }
 
+  function renderFrames() {
+    const q = $("filter").value.trim().toLowerCase();
+    const shown = frames.filter((f) => !q || f.name.toLowerCase().includes(q));
+    const grouped = !q && frames.some((f) => f.inPen) && frames.some((f) => !f.inPen);
+    let html = "", group = null;
+    for (const f of shown) {
+      if (grouped && group !== f.inPen) { group = f.inPen; html += `<div class="group">${f.inPen ? "Selected in Pen" : "Other frames"}</div>`; }
+      const on = picked.has(f.id);
+      html += `<label class="row${on ? " on" : ""}" data-id="${esc(f.id)}" title="${esc(f.name)}">`
+        + `<input class="check" type="checkbox"${on ? " checked" : ""}>`
+        + icon(f.type === "frame" ? "frame" : "layer")
+        + `<span class="name">${esc(f.name)}</span></label>`;
+    }
+    $("frames").innerHTML = html || `<div class="nomatch">No frames match “${esc(q)}”.</div>`;
+    sync();
+  }
+
+  // click toggles one row; shift-click sets the whole range to the clicked row's new state, like Figma's layer list
+  $("frames").addEventListener("click", (e) => {
+    const row = e.target.closest(".row");
+    if (!row || busy) return e.preventDefault();
+    e.preventDefault();
+    const id = row.dataset.id;
+    const value = !picked.has(id);
+    const ids = [...$("frames").querySelectorAll(".row")].map((r) => r.dataset.id);
+    const a = ids.indexOf(lastClicked), b = ids.indexOf(id);
+    const range = e.shiftKey && a >= 0 ? ids.slice(Math.min(a, b), Math.max(a, b) + 1) : [id];
+    for (const x of range) value ? picked.add(x) : picked.delete(x);
+    lastClicked = id;
+    renderFrames();
+    $("frames").querySelector(`.row[data-id="${CSS.escape(id)}"] .check`).focus();
+  });
+  $("frames").addEventListener("keydown", (e) => {
+    if (e.key === " " && e.target.classList.contains("check")) { e.preventDefault(); e.target.closest(".row").click(); }
+  });
+  $("filter").oninput = renderFrames;
+  $("toggleAll").onclick = () => {
+    const shown = [...$("frames").querySelectorAll(".row")].map((r) => r.dataset.id);
+    const all = shown.every((id) => picked.has(id));
+    for (const id of shown) all ? picked.delete(id) : picked.add(id);
+    renderFrames();
+  };
+  $("refresh").onclick = loadState;
+
+  // ---------- footer ----------
+
+  let fileDesign = null;
+  function sync() {
+    const go = $("go");
+    if (view === "files") {
+      go.disabled = busy || !fileDesign;
+      go.textContent = busy ? "Importing…" : fileDesign ? `Import ${fileDesign.name || "design"}` : "Choose a design.json";
+    } else {
+      const n = picked.size;
+      go.disabled = busy || !n || view !== "pick";
+      go.textContent = busy ? "Importing…" : n ? `Import ${plural(n, "frame")}` : "Select frames to import";
+    }
+    const shown = [...$("frames").querySelectorAll(".row")].map((r) => r.dataset.id);
+    $("count").textContent = picked.size ? `${picked.size} of ${frames.length} selected` : `${frames.length}`;
+    $("toggleAll").textContent = shown.length && shown.every((id) => picked.has(id)) ? "Clear" : "Select all";
+    $("toggleAll").disabled = busy || !shown.length;
+    $("refresh").disabled = busy;
+  }
+
+  function status(html) { $("status").hidden = !html; $("status").innerHTML = html || ""; }
+
+  function progress(label, detail, fraction) {
+    status(`<div class="progress-label"><span>${esc(label)}</span><span>${esc(detail || "")}</span></div>`
+      + `<div class="track"><i style="width:${Math.round(fraction * 100)}%"></i></div>`);
+  }
+
+  function result(r) {
+    const what = [plural(r.layers, "layer"), r.components ? plural(r.components, "component") : ""].filter(Boolean).join(" · ");
+    const notes = r.notes.map((n) => `<details><summary>${icon("chev")}<span>${esc(n.title)}</span><span class="count">${n.items.length}</span></summary>`
+      + `<ul>${n.items.map((i) => `<li>${esc(i)}</li>`).join("")}</ul></details>`).join("");
+    status(`<div class="headline"><span style="color:${notes ? "var(--warning)" : "var(--success)"}">${icon(notes ? "warn" : "ok")}</span>`
+      + `<div><b>Imported ${plural(r.roots, "frame")}</b><span class="dim">${esc(what)}${notes ? ". Check these on the canvas:" : ""}</span></div></div>`
+      + (notes ? `<div class="notes">${notes}</div>` : ""));
+  }
+
+  function failure(message) {
+    status(`<div class="headline"><span style="color:var(--danger)">${icon("fail")}</span><div><b>Import failed</b><span class="dim">${esc(message)}</span></div></div>`
+      + `<div class="links"><button class="text-btn" id="copy">Copy details</button></div>`);
+    $("copy").onclick = copyDetails;
+  }
+
+  // the Figma iframe often blocks navigator.clipboard; a selected textarea + execCommand still works there
+  function copyDetails() {
+    const t = Object.assign(document.createElement("textarea"), { value: transcript.join("\n") });
+    document.body.append(t); t.select(); document.execCommand("copy"); t.remove();
+    $("copy").textContent = "Copied";
+  }
+
+  // ---------- import ----------
+
   function run(design, assets) {
-    log(`importing ${design.name}: ${design.nodes.length} root node(s), ${design.assets.length} image(s), ${Object.keys(design.icons).length} icon(s)…`);
-    busy(true);
+    log(`importing ${design.name}: ${design.nodes.length} root node(s), ${design.assets.length} image(s), ${Object.keys(design.icons).length} icon(s)`);
+    progress("Building", "", 0.1);
     parent.postMessage({ pluginMessage: { type: "import", design, assets } }, "*");
   }
 
-  $("go").onclick = async () => {
-    const ids = checked();
-    busy(true);
-    $("log").textContent = "reading from Pen…";
+  async function importFromPen() {
+    const ids = [...picked];
+    busy = true; transcript = []; sync();
+    progress("Reading from Pen", plural(ids.length, "frame"), 0.03);
     try {
       const r = await fetch(`${HELPER}/export?ids=${ids.join(",")}`);
       const d = await r.json();
       if (!r.ok) throw new Error(d.error);
       const assets = {};
       for (const [k, v] of Object.entries(d.assetData)) assets[k] = b64(v);
-      if (d.missingAssets.length) log(`missing image files, will import as grey: ${d.missingAssets.join(", ")}`);
-      if (d.missingIcons.length) log(`missing icons, will import as empty frames: ${d.missingIcons.join(", ")}`);
-      if (d.missingRasters.length) log(`could not export from Pen as image, will import as empty frames: ${d.missingRasters.join(", ")}`);
+      if (d.missingAssets.length) log(`missing image files: ${d.missingAssets.join(", ")}`);
+      if (d.missingIcons.length) log(`missing icons: ${d.missingIcons.join(", ")}`);
+      if (d.missingRasters.length) log(`not exportable from Pen as image: ${d.missingRasters.join(", ")}`);
       run(d, assets);
-    } catch (e) { log(`failed: ${e.message}`); busy(false); }
-  };
-  const setAll = (v) => { $("frames").querySelectorAll("input").forEach((c) => (c.checked = v)); sync(); };
-  $("all").onclick = () => setAll(true);
-  $("none").onclick = () => setAll(false);
-  $("frames").onchange = sync;
-  $("refresh").onclick = $("retry").onclick = loadState;
+    } catch (e) {
+      log(`failed: ${e.message}`);
+      busy = false; sync();
+      failure(e instanceof TypeError ? "Lost the connection to pen2figma. Try again." : e.message);
+    }
+  }
 
-  // First click asks the helper whether main on GitHub is newer; the second installs it.
+  async function importFromFiles() {
+    busy = true; transcript = []; sync();
+    const assets = {};
+    const files = [...$("assets").files];
+    for (const url of fileDesign.assets) {
+      const f = files.find((x) => (x.webkitRelativePath || x.name).endsWith("/" + url) || x.name === url);
+      if (f) assets[url] = new Uint8Array(await f.arrayBuffer());
+    }
+    const missing = fileDesign.assets.filter((a) => !assets[a]);
+    if (missing.length) log(`no bytes for ${missing.length} image(s): ${missing.join(", ")}`);
+    run(fileDesign, assets);
+  }
+
+  $("go").onclick = () => (view === "files" ? importFromFiles() : importFromPen());
+
+  onmessage = (e) => {
+    const m = e.data.pluginMessage; if (!m) return;
+    if (m.type === "log") log(m.text);
+    if (m.type === "progress") progress(`Building ${m.done + 1} of ${m.total}`, m.name, 0.1 + 0.9 * (m.done / m.total));
+    if (m.type === "done") {
+      busy = false;
+      if (m.ok) {
+        log(`done: ${JSON.stringify(m.result)}`);
+        result(m.result);
+        // clear the picks so the same frames can't be imported twice by accident
+        picked.clear(); lastClicked = null;
+        renderFrames();
+        resetFiles();
+      } else {
+        log(m.text);
+        failure(m.text.split("\n")[0].replace(/^failed: /, ""));
+      }
+      sync();
+    }
+  };
+
+  // ---------- import from files ----------
+
+  function resetFiles() {
+    fileDesign = null;
+    $("design").value = $("assets").value = "";
+    $("designPick").classList.remove("set"); $("designPick").querySelector("span").textContent = "Choose file…";
+    $("assetsPick").classList.remove("set"); $("assetsPick").querySelector("span").textContent = "Choose folder…";
+  }
+  $("filesLink").onclick = () => { status(""); show("files"); };
+  $("filesBack").onclick = () => { status(""); show(loaded && frames.length ? "pick" : "empty"); loadState(); };
+  $("design").onchange = async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    try { fileDesign = JSON.parse(await f.text()); status(""); }
+    catch { fileDesign = null; failure(`${f.name} isn't a pen2figma design.json.`); }
+    $("designPick").classList.toggle("set", !!fileDesign);
+    $("designPick").querySelector("span").textContent = fileDesign ? f.name : "Choose file…";
+    sync();
+  };
+  $("assets").onchange = (e) => {
+    const n = e.target.files.length;
+    const folder = n ? (e.target.files[0].webkitRelativePath || "").split("/")[0] || "assets" : "";
+    $("assetsPick").classList.toggle("set", !!n);
+    $("assetsPick").querySelector("span").textContent = n ? `${folder} · ${plural(n, "file")}` : "Choose folder…";
+  };
+
+  // ---------- versions & updates ----------
+
+  function notice(text) { $("notice").hidden = !text; $("noticeText").textContent = text || ""; }
+
+  function versions(helper) {
+    if (!helper) return notice("This copy of pen2figma is too old to update itself. Double-click Install.command from the newest download.");
+    if (helper === VERSION) return notice("");
+    notice(isNewer(helper, VERSION)
+      ? `pen2figma was updated to v${helper}. Close and reopen the plugin to finish.`
+      : `The helper is on v${helper}. Click Check for updates.`);
+  }
+
+  // first click asks the helper whether a newer release is published; the second installs it
   let latest = null;
   $("update").onclick = async () => {
     const b = $("update");
@@ -132,11 +481,15 @@
         b.textContent = "Checking…";
         const r = await fetch(`${HELPER}/update`);
         const u = await r.json();
-        if (r.status === 404) throw new Error("this helper is too old to update itself: double-click Install.command from the newest download");
+        if (r.status === 404) throw new Error("this copy of pen2figma is too old to update itself. Double-click Install.command from the newest download.");
         if (!r.ok) throw new Error(u.error);
-        if (!u.available) { b.textContent = "Up to date"; b.disabled = false; return; }
+        if (!u.available) {
+          b.textContent = "Up to date";
+          return setTimeout(() => { b.textContent = "Check for updates"; b.disabled = false; }, 3000);
+        }
         latest = u.latest;
         b.textContent = `Update to v${latest}`;
+        b.classList.add("go");
         b.disabled = false;
         return;
       }
@@ -145,50 +498,18 @@
       const u = await r.json();
       if (!r.ok) throw new Error(u.error);
       b.textContent = `Updated to v${u.version}`;
-      log(`updated to v${u.version}. Close and reopen the plugin to use it.`);
+      b.classList.remove("go");
+      notice("Close and reopen the plugin to use the new version.");
     } catch (e) {
       latest = null;
       b.textContent = "Check for updates";
+      b.classList.remove("go");
       b.disabled = false;
-      log(`update failed: ${e instanceof TypeError ? "can't reach the pen2figma helper" : e.message}`);
+      notice(`Update failed: ${e instanceof TypeError ? "can't reach pen2figma on this Mac." : e.message}`);
     }
   };
 
-  let fileDesign = null;
-  $("design").onchange = async (e) => {
-    const f = e.target.files[0]; if (!f) return;
-    fileDesign = JSON.parse(await f.text());
-    sync();
-  };
-  $("gofiles").onclick = async () => {
-    if (!fileDesign) return;
-    const assets = {};
-    const files = [...$("assets").files];
-    for (const url of fileDesign.assets) {
-      const f = files.find((x) => (x.webkitRelativePath || x.name).endsWith("/" + url) || x.name === url);
-      if (f) assets[url] = new Uint8Array(await f.arrayBuffer());
-    }
-    const missing = fileDesign.assets.filter((a) => !assets[a]);
-    if (missing.length) log(`no bytes for ${missing.length} image(s), they will import as grey: ${missing.join(", ")}`);
-    run(fileDesign, assets);
-  };
-
-  onmessage = (e) => {
-    const m = e.data.pluginMessage; if (!m) return;
-    if (m.type === "log") log(m.text);
-    if (m.type === "done") {
-      log(m.text);
-      if (m.ok) {
-        // reset so the same frames can't be imported twice by accident
-        $("frames").querySelectorAll("input").forEach((c) => (c.checked = false));
-        $("design").value = $("assets").value = "";
-        fileDesign = null;
-        log("check frames again to import more.");
-      }
-      busy(false);
-    }
-  };
-  $("version").textContent = `plugin v${VERSION}`;
+  $("version").textContent = `v${VERSION}`;
   loadState();
 </script>
 </body></html>

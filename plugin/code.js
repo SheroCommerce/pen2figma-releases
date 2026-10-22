@@ -2,15 +2,16 @@
 // as native Figma nodes: auto-layout frames, text, vectors, image fills, color variables.
 // Plain JS, no build step. Runs entirely inside Figma; no network.
 
-figma.showUI(__html__, { width: 380, height: 520 });
+// themeColors exposes Figma's --figma-color-* tokens to ui.html, so the window follows light/dark
+figma.showUI(__html__, { width: 380, height: 560, themeColors: true });
 
 const log = (text) => figma.ui.postMessage({ type: "log", text });
 
 figma.ui.onmessage = async (msg) => {
   if (msg.type !== "import") return;
   try {
-    const summary = await importDesign(msg.design, msg.assets);
-    figma.ui.postMessage({ type: "done", ok: true, text: summary });
+    const result = await importDesign(msg.design, msg.assets);
+    figma.ui.postMessage({ type: "done", ok: true, result });
   } catch (e) {
     figma.ui.postMessage({ type: "done", text: `failed: ${e.message}\n${e.stack || ""}` });
     throw e;
@@ -56,7 +57,8 @@ async function importDesign(design, assets) {
   await preloadImageSizes(ctx, all);
 
   const roots = [];
-  for (const n of design.nodes) {
+  for (const [i, n] of design.nodes.entries()) {
+    figma.ui.postMessage({ type: "progress", done: i, total: design.nodes.length, name: n.name || n.type });
     roots.push(n.reusable && ctx.defs[n.id] ? await ensureComponent(ctx, n.id) : await build(ctx, n, figma.currentPage));
     log(`built ${n.name || n.type}`);
   }
@@ -70,14 +72,16 @@ async function importDesign(design, assets) {
   for (const { node, fill } of ctx.pendingCrops) node.fills = paints(ctx, fill, { w: node.width, h: node.height });
   figma.viewport.scrollAndZoomIntoView(roots);
 
-  const lines = [`done: ${ctx.created} nodes, ${roots.length} root(s), ${Object.keys(ctx.comps).length} component(s)`];
-  if (ctx.missingFonts.size) lines.push(`fonts not available (fell back to Inter): ${[...ctx.missingFonts].join(", ")}`);
-  if (ctx.missingImages.size) lines.push(`images without bytes (grey placeholder): ${[...ctx.missingImages].join(", ")}`);
-  if (ctx.missingIcons.size) lines.push(`icons without svg (empty frame): ${[...ctx.missingIcons].join(", ")}`);
-  if (ctx.unknownTypes.size) lines.push(`unsupported pen types imported as frames: ${[...ctx.unknownTypes].join(", ")}`);
-  if (ctx.skipped.size) lines.push(`not applied: ${[...ctx.skipped].join(", ")}`);
-  if (ctx.detached.size) lines.push(`built as plain frames, not instances: ${[...ctx.detached].join("; ")}`);
-  return lines.join("\n");
+  // notes are what the designer should check on the canvas; the UI lists them under the result
+  const notes = [
+    ["Fonts replaced with Inter", ctx.missingFonts],
+    ["Images shown as grey placeholders", ctx.missingImages],
+    ["Icons left as empty frames", ctx.missingIcons],
+    ["Unsupported Pen layers imported as frames", ctx.unknownTypes],
+    ["Properties not applied", ctx.skipped],
+    ["Built as plain frames instead of instances", ctx.detached],
+  ].filter(([, set]) => set.size).map(([title, set]) => ({ title, items: [...set] }));
+  return { layers: ctx.created, roots: roots.length, components: Object.keys(ctx.comps).length, notes };
 }
 
 // ---------- variables ----------
