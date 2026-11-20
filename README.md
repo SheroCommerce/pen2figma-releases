@@ -2,8 +2,6 @@
 
 Bring [Pen](https://pen.dev) designs into Figma as real, editable layers: auto-layout, text, components, images, icons and color variables.
 
-![Choosing frames](docs/screenshots/plugin-pick-frames.png)
-
 ## Install (once, about 2 minutes)
 
 You need an Apple Silicon Mac with the **Pen** app and the **Figma desktop app**.
@@ -22,19 +20,26 @@ You can delete the downloaded folder afterwards.
 2. In **Figma**, open **Plugins → Development → pen2figma**.
 3. Tick the frames to bring over (Shift-click ticks a range), then click **Import**.
 
-![After an import](docs/screenshots/plugin-done.png)
+   ![Two frames ticked, ready to import](docs/screenshots/plugin-pick-frames.png)
 
-Anything that needs a look, like a font you don't have, is listed under the result. Frames land where they sit in Pen, so an empty page works best.
+4. When it's done, the plugin says how many frames it imported. Anything that needs a look, like a font you don't have, is listed under the result; click a line to see which ones.
+
+   ![Import result with a font to check](docs/screenshots/plugin-done.png)
+
+Frames land where they sit in Pen, so an empty page works best.
 
 ## Update
 
-Click **Check for updates** at the bottom of the plugin, then **Update**, then close and reopen the plugin.
+Click **Check for updates** at the bottom of the plugin. If there's a new version it changes to **Update to v…**: click it, then close and reopen the plugin.
+
+![Update offered at the bottom of the plugin](docs/screenshots/plugin-update.png)
 
 ## Problems
 
-![Helper offline](docs/screenshots/plugin-offline.png)
-
 - **pen2figma isn't running:** double-click `Install.command` again, then **Try again**.
+
+  ![pen2figma isn't running](docs/screenshots/plugin-offline.png)
+
 - **Fonts replaced with Inter:** install the font on your Mac and import again.
 - **Import failed** or anything else: click **Copy details** (or take a screenshot) and send it to whoever maintains pen2figma.
 
