@@ -189,7 +189,7 @@
 
 <script>
   const HELPER = "http://localhost:4141";
-  const VERSION = "0.2.4"; // keep in step with package.json; npm run check enforces it
+  const VERSION = "0.2.5"; // keep in step with package.json; npm run check enforces it
   const $ = (id) => document.getElementById(id);
   const icon = (id) => `<svg width="16" height="16"><use href="#i-${id}"/></svg>`;
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
